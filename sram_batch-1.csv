@@ -1,0 +1,7 @@
+run_name,port_mode,width_bits,depth_words,tech_um,temperature_k,data_cell_type,data_peripheral_type
+sram_256x32_sp,single,32,256,0.028,360,itrs-hp,itrs-hp
+sram_1024x64_sp,single,64,1024,0.028,360,itrs-hp,itrs-hp
+sram_1024x64_dp,dual,64,1024,0.028,360,itrs-hp,itrs-hp
+sram_4096x128_dp,dual,128,4096,0.028,360,itrs-hp,itrs-hp
+sram_128x4096_sp,single,4096,128,0.028,360,itrs-hp,itrs-hp
+sram_128x4096_dp,dual,4096,128,0.028,360,itrs-hp,itrs-hp

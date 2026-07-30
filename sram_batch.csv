@@ -9,3 +9,5 @@ sram_64x8192_sp,single,8192,64,0.028,360,itrs-hp,itrs-hp,500,1,0
 sram_64x8192_dp,dual,8192,64,0.028,360,itrs-hp,itrs-hp,500,1,1
 sram_32x16384_dp,dual,16384,32,0.028,360,itrs-hp,itrs-hp,500,1,0
 sram_32x16384_sp,single,16384,32,0.028,360,itrs-hp,itrs-hp,500,1,1
+sram_128x128_sp,single,128,128,0.028,360,itrs-hp,itrs-hp,500,1,0
+sram_128x128_dp,dual,128,128,0.028,360,itrs-hp,itrs-hp,500,1,1

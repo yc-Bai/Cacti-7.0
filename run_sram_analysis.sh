@@ -325,17 +325,47 @@ parse_output() {
   else
     TOTAL_POWER_MW=""
   fi
+
+  if [[ -n "${DYNAMIC_READ_POWER_MW:-}" ]]; then
+    DYNAMIC_READ_POWER_W="$(awk -v p="$DYNAMIC_READ_POWER_MW" 'BEGIN { printf "%.10g", p / 1000 }')"
+  else
+    DYNAMIC_READ_POWER_W=""
+  fi
+
+  if [[ -n "${DYNAMIC_WRITE_POWER_MW:-}" ]]; then
+    DYNAMIC_WRITE_POWER_W="$(awk -v p="$DYNAMIC_WRITE_POWER_MW" 'BEGIN { printf "%.10g", p / 1000 }')"
+  else
+    DYNAMIC_WRITE_POWER_W=""
+  fi
+
+  if [[ -n "${LEAKAGE_POWER_MW:-}" ]]; then
+    LEAKAGE_POWER_W="$(awk -v p="$LEAKAGE_POWER_MW" 'BEGIN { printf "%.10g", p / 1000 }')"
+  else
+    LEAKAGE_POWER_W=""
+  fi
+
+  if [[ -n "${GATE_LEAKAGE_POWER_MW:-}" ]]; then
+    GATE_LEAKAGE_POWER_W="$(awk -v p="$GATE_LEAKAGE_POWER_MW" 'BEGIN { printf "%.10g", p / 1000 }')"
+  else
+    GATE_LEAKAGE_POWER_W=""
+  fi
+
+  if [[ -n "${TOTAL_POWER_MW:-}" ]]; then
+    TOTAL_POWER_W="$(awk -v p="$TOTAL_POWER_MW" 'BEGIN { printf "%.10g", p / 1000 }')"
+  else
+    TOTAL_POWER_W=""
+  fi
 }
 
 write_csv_header() {
   local path="$1"
   mkdir -p "$(dirname "$path")"
   csv_row \
-    run_name total_macro_area_mm2 total_power_mw status port_mode width_bits depth_words tech_um temperature_k frequency_mhz max_frequency_mhz read_activity write_activity \
+    run_name total_macro_area_mm2 total_power_w status port_mode width_bits depth_words tech_um temperature_k frequency_mhz max_frequency_mhz read_activity write_activity \
     size_bytes block_size_bytes padded_width_bits padding_bits_per_word \
     total_logical_bits total_padded_bits rw_ports read_ports write_ports \
     access_time_ns cycle_time_ns dynamic_read_energy_nj dynamic_write_energy_nj \
-    dynamic_read_power_mw dynamic_write_power_mw leakage_power_mw gate_leakage_power_mw data_array_area_mm2 cache_height_mm \
+    dynamic_read_power_w dynamic_write_power_w leakage_power_w gate_leakage_power_w data_array_area_mm2 cache_height_mm \
     cache_width_mm best_ndwl best_ndbl best_nspd best_ndcm \
     best_ndsam_l1 best_ndsam_l2 cfg_path output_path >"$path"
 }
@@ -347,11 +377,11 @@ append_csv_row() {
   local output_path="$4"
 
   csv_row \
-    "$RUN_NAME" "${TOTAL_MACRO_AREA_MM2:-}" "${TOTAL_POWER_MW:-}" "$status" "$PORT_MODE" "$WIDTH_BITS" "$DEPTH_WORDS" "$TECH_UM" "$TEMPERATURE_K" "$FREQUENCY_MHZ" "${MAX_FREQUENCY_MHZ:-}" "$READ_ACTIVITY" "$WRITE_ACTIVITY" \
+    "$RUN_NAME" "${TOTAL_MACRO_AREA_MM2:-}" "${TOTAL_POWER_W:-}" "$status" "$PORT_MODE" "$WIDTH_BITS" "$DEPTH_WORDS" "$TECH_UM" "$TEMPERATURE_K" "$FREQUENCY_MHZ" "${MAX_FREQUENCY_MHZ:-}" "$READ_ACTIVITY" "$WRITE_ACTIVITY" \
     "$SIZE_BYTES" "$BLOCK_SIZE_BYTES" "$PADDED_WIDTH_BITS" "$PADDING_BITS_PER_WORD" \
     "$TOTAL_LOGICAL_BITS" "$TOTAL_PADDED_BITS" "$RW_PORTS" "$READ_PORTS" "$WRITE_PORTS" \
     "${ACCESS_TIME_NS:-}" "${CYCLE_TIME_NS:-}" "${DYNAMIC_READ_ENERGY_NJ:-}" "${DYNAMIC_WRITE_ENERGY_NJ:-}" \
-    "${DYNAMIC_READ_POWER_MW:-}" "${DYNAMIC_WRITE_POWER_MW:-}" "${LEAKAGE_POWER_MW:-}" "${GATE_LEAKAGE_POWER_MW:-}" "${DATA_ARRAY_AREA_MM2:-}" "${CACHE_HEIGHT_MM:-}" \
+    "${DYNAMIC_READ_POWER_W:-}" "${DYNAMIC_WRITE_POWER_W:-}" "${LEAKAGE_POWER_W:-}" "${GATE_LEAKAGE_POWER_W:-}" "${DATA_ARRAY_AREA_MM2:-}" "${CACHE_HEIGHT_MM:-}" \
     "${CACHE_WIDTH_MM:-}" "${BEST_NDWL:-}" "${BEST_NDBL:-}" "${BEST_NSPD:-}" "${BEST_NDCM:-}" \
     "${BEST_NDSAM_L1:-}" "${BEST_NDSAM_L2:-}" "$cfg_path" "$output_path" >>"$summary_path"
 }
@@ -359,10 +389,10 @@ append_csv_row() {
 append_batch_total_row() {
   local summary_path="$1"
   local total_area_mm2="$2"
-  local total_power_mw="$3"
+  local total_power_w="$3"
 
   csv_row \
-    "__TOTAL__" "$total_area_mm2" "$total_power_mw" "summary" "" "" "" "" "" "" "" "" "" \
+    "__TOTAL__" "$total_area_mm2" "$total_power_w" "summary" "" "" "" "" "" "" "" "" "" \
     "" "" "" "" \
     "" "" "" "" "" \
     "" "" "" "" \
@@ -502,7 +532,7 @@ run_batch() {
   SUMMARY_PATH=""
   parse_options "$@"
 
-  local output_root summary_path header line row_num total_area_mm2 total_power_mw
+  local output_root summary_path header line row_num total_area_mm2 total_power_w
   output_root="$OUT_DIR"
   summary_path="${SUMMARY_PATH:-$output_root/summary.csv}"
   mkdir -p "$output_root"
@@ -514,7 +544,7 @@ run_batch() {
 
   row_num=1
   total_area_mm2="0"
-  total_power_mw="0"
+  total_power_w="0"
   while IFS= read -r line || [[ -n "$line" ]]; do
     row_num=$((row_num + 1))
     line="${line%$'\r'}"
@@ -540,11 +570,11 @@ run_batch() {
     run_one "$output_root" "$summary_path"
     if [[ "${LAST_RUN_STATUS:-}" == "ok" ]]; then
       total_area_mm2="$(awk -v total="$total_area_mm2" -v value="${TOTAL_MACRO_AREA_MM2:-0}" 'BEGIN { printf "%.10g", total + value }')"
-      total_power_mw="$(awk -v total="$total_power_mw" -v value="${TOTAL_POWER_MW:-0}" 'BEGIN { printf "%.10g", total + value }')"
+      total_power_w="$(awk -v total="$total_power_w" -v value="${TOTAL_POWER_W:-0}" 'BEGIN { printf "%.10g", total + value }')"
     fi
   done < <(sed '1d' "$csv_path")
 
-  append_batch_total_row "$summary_path" "$total_area_mm2" "$total_power_mw"
+  append_batch_total_row "$summary_path" "$total_area_mm2" "$total_power_w"
   printf 'Summary: %s\n' "$summary_path"
 }
 
